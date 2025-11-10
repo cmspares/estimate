@@ -719,7 +719,7 @@
     const canvasWrap = document.getElementById('canvasWrap');
 
     const PAGE_W = 650, PAGE_H = 950;
-    const DPR = window.devicePixelRatio || 1;
+    const DPR = 1; // Reduced DPR for smaller file size
 
     /* --- helpers --- */
     function isNumeric(n){ return n !== '' && !isNaN(parseFloat(n)) && isFinite(n); }
@@ -1410,6 +1410,29 @@
       return pages;
     }
 
+    /* Optimized canvas to data URL with compression */
+    function canvasToOptimizedDataURL(canvas, quality = 0.7) {
+      return new Promise((resolve) => {
+        // Create a temporary canvas for optimization
+        const tempCanvas = document.createElement('canvas');
+        const tempCtx = tempCanvas.getContext('2d');
+        
+        // Set optimized dimensions (slightly reduced for file size)
+        const scale = 0.9; // Reduce size by 10% for optimization
+        tempCanvas.width = canvas.width * scale;
+        tempCanvas.height = canvas.height * scale;
+        
+        // Draw with smoothing for better quality at reduced size
+        tempCtx.imageSmoothingEnabled = true;
+        tempCtx.imageSmoothingQuality = 'high';
+        tempCtx.drawImage(canvas, 0, 0, tempCanvas.width, tempCanvas.height);
+        
+        // Convert to JPEG with optimized quality
+        const dataUrl = tempCanvas.toDataURL('image/jpeg', quality);
+        resolve(dataUrl);
+      });
+    }
+
     /* Download PDF build from canvases */
     async function downloadPDF(isSimple = false){
       if (items.length === 0 && !confirm('No items added. Download empty estimate?')) {
@@ -1427,15 +1450,38 @@
         const pages = buildPagesFromItems(items, isSimple);
         if (!pages || pages.length === 0) return;
         const { jsPDF } = window.jspdf;
-        const pdf = new jsPDF({ unit: 'px', format: [PAGE_W, PAGE_H], orientation: 'portrait' });
+        const pdf = new jsPDF({ 
+          unit: 'px', 
+          format: [PAGE_W, PAGE_H], 
+          orientation: 'portrait',
+          compress: true // Enable PDF compression
+        });
+        
         for (let i=0;i<pages.length;i++){
-          const dataUrl = pages[i].toDataURL('image/png');
-          if (i===0) pdf.addImage(dataUrl, 'PNG', 0, 0, PAGE_W, PAGE_H);
-          else { pdf.addPage([PAGE_W, PAGE_H], 'portrait'); pdf.addImage(dataUrl, 'PNG', 0, 0, PAGE_W, PAGE_H); }
+          // Use optimized data URL with compression
+          const dataUrl = await canvasToOptimizedDataURL(pages[i], 0.7);
+          
+          if (i===0) {
+            pdf.addImage(dataUrl, 'JPEG', 0, 0, PAGE_W, PAGE_H, undefined, 'FAST');
+          } else { 
+            pdf.addPage([PAGE_W, PAGE_H], 'portrait'); 
+            pdf.addImage(dataUrl, 'JPEG', 0, 0, PAGE_W, PAGE_H, undefined, 'FAST');
+          }
         }
+        
         const typeLabel = isSimple ? 'Employees' : 'Customer';
         const filename = (msInput.value || 'Estimate').trim().replace(/\s+/g,'_') + `_${typeLabel}.pdf`;
-        pdf.save(filename);
+        
+        // Force download instead of opening in viewer
+        const pdfBlob = pdf.output('blob');
+        const url = URL.createObjectURL(pdfBlob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
         
         // Save to history (only for Customer PDF, not Employees PDF)
         if (!isSimple) {
