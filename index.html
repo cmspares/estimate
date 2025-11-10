@@ -1,0 +1,1124 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Estimate</title>
+<style>
+  :root{
+    --page-w:650px;
+    --page-h:950px;
+    --panel-bg:#ffffff;
+    --muted:#666;
+    --accent:#0b6fb0;
+    --accent-dark:#094a6f;
+    --box-border:#e6eef6;
+    --radius:8px;
+    --pad:14px;
+  }
+  body {
+    font-family: "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    margin: 0;
+    padding: 12px;
+    box-sizing: border-box;
+    background: #f3f6f9;
+    color: #111;
+    line-height: 1.5;
+  }
+  .topbar {
+    display:flex;
+    align-items:center;
+    gap:16px;
+    margin-bottom:12px;
+  }
+  h1 {
+    font-size:20px;
+    margin:0;
+    color:var(--accent-dark);
+  }
+  .layout {
+    display: flex;
+    gap: 20px;
+    align-items: flex-start;
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    box-sizing: border-box;
+  }
+  .controls {
+    width: 340px;
+    background:var(--panel-bg);
+    border-radius:var(--radius);
+    padding:var(--pad);
+    box-shadow: 0 4px 12px rgba(11,111,176,0.06);
+    border: 1px solid var(--box-border);
+    box-sizing: border-box;
+    flex: 0 0 340px;
+  }
+  .controls h2 {
+    font-size:16px;
+    margin:0 0 8px 0;
+    color:var(--accent-dark);
+  }
+  .field {
+    margin-bottom:10px;
+  }
+  .field label {
+    display:block;
+    font-size:13px;
+    color:var(--muted);
+    margin-bottom:6px;
+  }
+  .field input[type="text"],
+  .field input[type="number"],
+  .field input[type="tel"] {
+    width:100%;
+    padding:10px 12px;
+    font-size:15px;
+    border:1px solid var(--box-border);
+    border-radius:6px;
+    box-sizing:border-box;
+    background:#fff;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .field input:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(11, 111, 176, 0.1);
+  }
+  .small-note {
+    font-size:12px;
+    color:var(--muted);
+    margin-top:8px;
+  }
+  .row-inputs {
+    display:flex;
+    gap:8px;
+    margin-top:8px;
+  }
+  .row-inputs input {
+    flex:1;
+  }
+  .controls .buttons {
+    display:flex;
+    gap:8px;
+    margin-top:12px;
+    flex-wrap:wrap;
+  }
+  .controls button {
+    padding:10px 12px;
+    border-radius:6px;
+    border:none;
+    cursor:pointer;
+    font-weight:600;
+    font-size:14px;
+    transition: background-color 0.2s, transform 0.1s;
+  }
+  .controls button:active {
+    transform: scale(0.98);
+  }
+  .btn-primary {
+    background:var(--accent);
+    color:#fff;
+  }
+  .btn-primary:hover {
+    background: var(--accent-dark);
+  }
+  .btn-secondary {
+    background:#eef4fb;
+    color:var(--accent);
+  }
+  .btn-secondary:hover {
+    background: #e0ecfa;
+  }
+  .btn-tertiary {
+    background:#f8f9fa;
+    color:#666;
+    border:1px solid #ddd;
+  }
+  .btn-tertiary:hover {
+    background: #e9ecef;
+  }
+  .btn-danger {
+    background:#ffebee;
+    color:#d32f2f;
+    border:1px solid #ffcdd2;
+  }
+  .btn-danger:hover {
+    background: #ffcdd2;
+  }
+  .right {
+    flex:1;
+    display:flex;
+    gap:20px;
+    align-items:flex-start;
+  }
+  .preview-panel {
+    width:460px;
+    background:var(--panel-bg);
+    padding:var(--pad);
+    border-radius:var(--radius);
+    border:1px solid var(--box-border);
+    box-shadow: 0 4px 12px rgba(11,111,176,0.04);
+    box-sizing:border-box;
+  }
+  table.preview {
+    width:100%;
+    border-collapse:collapse;
+    font-size:14px;
+  }
+  table.preview th,
+  table.preview td {
+    padding:8px;
+    border-bottom:1px solid #f0f2f4;
+    text-align:left;
+    vertical-align:middle;
+  }
+  table.preview th {
+    font-size:13px;
+    color:var(--muted);
+    text-align:left;
+  }
+  table.preview td:last-child {
+    text-align:right;
+    font-weight:600;
+  }
+  .canvas-wrap {
+    flex: 1 1 auto;
+    min-width: 320px;
+    background: var(--panel-bg);
+    padding: var(--pad);
+    border-radius: var(--radius);
+    border: 1px solid var(--box-border);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    align-items: flex-start;
+    overflow-x: auto;
+    box-sizing: border-box;
+  }
+  .canvas-container {
+    position: relative;
+    display: block;
+    width: 100%;
+    max-width: var(--page-w);
+    box-sizing: border-box;
+  }
+  .canvas-container canvas {
+    display: block;
+    width: 100%;
+    height: auto;
+    max-width: var(--page-w);
+    box-sizing: border-box;
+    border:1px solid #ddd;
+    background:#fff;
+  }
+  .canvas-label {
+    font-size:12px;
+    color:var(--muted);
+    text-align:center;
+    margin-bottom:6px;
+    width:100%;
+  }
+  .tabs {
+    display:flex;
+    gap:8px;
+    margin-bottom:10px;
+  }
+  .tab {
+    padding:8px 12px;
+    border-radius:6px;
+    cursor:pointer;
+    border:1px solid transparent;
+    background:#f2f6fb;
+    color:var(--accent-dark);
+    font-weight:600;
+    transition: all 0.2s;
+  }
+  .tab:hover {
+    background: #e8f0f8;
+  }
+  .tab.active {
+    background:var(--accent);
+    color:#fff;
+    border-color:var(--accent-dark);
+  }
+  .link-btn {
+    background:none;
+    border:none;
+    color:var(--accent);
+    cursor:pointer;
+    font-size:13px;
+    padding:0 6px;
+    transition: color 0.2s;
+  }
+  .link-btn:hover {
+    color: var(--accent-dark);
+    text-decoration: underline;
+  }
+  .loading {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 3px solid rgba(11, 111, 176, 0.3);
+    border-radius: 50%;
+    border-top-color: var(--accent);
+    animation: spin 1s ease-in-out infinite;
+    margin-right: 8px;
+    vertical-align: middle;
+  }
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+  .status-message {
+    padding: 8px 12px;
+    border-radius: 4px;
+    margin: 8px 0;
+    font-size: 14px;
+    display: none;
+  }
+  .status-success {
+    background-color: #e8f5e9;
+    color: #2e7d32;
+    border: 1px solid #c8e6c9;
+  }
+  .status-error {
+    background-color: #ffebee;
+    color: #c62828;
+    border: 1px solid #ffcdd2;
+  }
+  .history-panel {
+    background: var(--panel-bg);
+    border-radius: var(--radius);
+    padding: var(--pad);
+    border: 1px solid var(--box-border);
+    margin-top: 20px;
+    max-height: 300px;
+    overflow-y: auto;
+  }
+  .history-item {
+    padding: 10px;
+    border: 1px solid #e6eef6;
+    border-radius: 6px;
+    margin-bottom: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+  }
+  .history-item:hover {
+    background: #f8fbff;
+    border-color: var(--accent);
+  }
+  .history-item.active {
+    background: #eef7ff;
+    border-color: var(--accent);
+  }
+  .history-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 4px;
+  }
+  .history-title {
+    font-weight: 600;
+    color: var(--accent-dark);
+    flex: 1;
+    margin-right: 8px;
+  }
+  .history-date {
+    font-size: 12px;
+    color: var(--muted);
+    text-align: right;
+  }
+  .history-preview {
+    font-size: 12px;
+    color: var(--muted);
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+  .history-preview span {
+    background: #f0f6ff;
+    padding: 2px 6px;
+    border-radius: 4px;
+  }
+  .history-timer {
+    font-size: 11px;
+    color: #f57c00;
+    background: #fff3e0;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: 600;
+  }
+  .history-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .history-delete-btn {
+    background: none;
+    border: none;
+    color: #d32f2f;
+    cursor: pointer;
+    font-size: 12px;
+    padding: 4px 8px;
+    border-radius: 4px;
+    transition: background-color 0.2s;
+  }
+  .history-delete-btn:hover {
+    background: #ffebee;
+  }
+  .empty-history {
+    text-align: center;
+    color: var(--muted);
+    padding: 20px;
+    font-style: italic;
+  }
+  .modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.5);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+  }
+  .modal-content {
+    background: white;
+    padding: 20px;
+    border-radius: var(--radius);
+    max-width: 500px;
+    width: 90%;
+    max-height: 80vh;
+    overflow-y: auto;
+  }
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+  }
+  .modal-close {
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: var(--muted);
+  }
+  @media (max-width: 1020px){
+    .layout { flex-direction:column; }
+    .right { flex-direction:column; }
+    .preview-panel { width:100%; }
+    .canvas-wrap { width:100%; }
+  }
+  @media (max-width: 768px) {
+    body { padding: 8px; }
+    .controls { width: 100%; flex: 1; }
+    .preview-panel { overflow-x: auto; }
+    table.preview { min-width: 600px; }
+    .history-header { flex-direction: column; gap: 4px; }
+    .history-date { text-align: left; }
+  }
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+<body>
+  <div class="topbar">
+      <h1>Estimate</h1>
+  </div>
+  <div class="layout">
+    <div class="controls" role="region" aria-label="Document inputs">
+      <h2>Customer & Document Details</h2>
+      <div class="field">
+        <input id="dateInput" type="text" placeholder="DD-MM-YYYY or leave blank for today">
+      </div>
+      <div class="field">
+        <input id="msInput" type="text" placeholder="Customer / Company name">
+      </div>
+      <div class="field">
+        <input id="addressInput" type="text" placeholder="Address (short)">
+      </div>
+      <div class="field">
+        <input id="gstInput" type="text" placeholder="GSTIN (optional)">
+      </div>
+      <hr style="margin:12px 0">
+      <div class="field">
+        <input id="cashInput" type="number" placeholder="Cash (₹)" min="0">
+      </div>
+      <div class="field">
+        <input id="neftInput" type="number" placeholder="NEFT (₹)" min="0">
+      </div>
+      <hr style="margin:12px 0">
+      <div class="field">
+        <input id="transportInput" type="text" placeholder="Transport details">
+      </div>
+      <div class="field">
+        <input id="noInput" type="text" placeholder="Car No / Ref">
+      </div>
+      <div class="field">
+        <input id="phoneInput" type="tel" placeholder="Phone number">
+      </div>
+      <hr style="margin:12px 0">
+      <div class="field">
+        <input id="pfInput" type="number" placeholder="P/F Amount (₹)" min="0">
+      </div>
+      <hr style="margin:12px 0">
+      <h2>Add / Edit Item Row</h2>
+      <div class="field" style="margin-top:10px;">
+        <input id="qtyInput" placeholder="Qty">
+      </div>
+      <div class="field" style="margin-top:8px;">
+        <input id="unitInput" placeholder="Unit">
+      </div>
+      <div class="field" style="margin-top:8px;">
+        <input id="descInput" placeholder="Description">
+      </div>
+      <div class="field" style="margin-top:8px;">
+        <input id="rateInput" placeholder="Rate (per unit)">
+      </div>
+      <div class="buttons">
+        <button id="addRowBtn" class="btn-primary">Add / Update Row</button>
+        <button id="clearRowsBtn" class="btn-secondary">Clear Rows</button>
+      </div>
+      <div id="statusArea"></div>
+      <div style="margin-top:12px;" class="buttons">
+        <button id="renderBtn" class="btn-secondary">Render Preview</button>
+        <button id="downloadBtn" class="btn-primary">PDF for Customer</button>
+        <button id="downloadSimpleBtn" class="btn-tertiary">PDF for Employees</button>
+      </div>
+      <div class="history-panel">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+          <h3 style="margin:0">Download History</h3>
+          <button id="clearAllHistoryBtn" class="btn-danger" style="font-size: 12px; padding: 4px 8px;">Clear All</button>
+        </div>
+        <div id="historyList"></div>
+      </div>
+    </div>
+    <div class="right">
+      <div class="preview-panel" aria-label="Rows preview">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+          <h2 style="margin:0">Items Preview</h2>
+          <div>
+            <button class="link-btn" onclick="sortByAmount()">Sort by Amount</button>
+            <button class="link-btn" onclick="reverseRows()">Reverse</button>
+          </div>
+        </div>
+        <table class="preview" id="previewTable" role="table" aria-label="Items">
+          <thead>
+            <tr>
+              <th style="width:8%">Qty</th>
+              <th style="width:12%">Unit</th>
+              <th>Description</th>
+              <th style="width:16%; text-align:right">Rate</th>
+              <th style="width:16%; text-align:right">Amount</th>
+              <th style="width:10%; text-align:center">Action</th>
+            </tr>
+          </thead>
+          <tbody id="previewBody"></tbody>
+        </table>
+      </div>
+      <div>
+        <div class="tabs" role="tablist">
+          <div class="tab active" data-design="standard" role="tab" tabindex="0" aria-selected="true">Standard</div>
+          <div class="tab" data-design="modern" role="tab" tabindex="0" aria-selected="false">Modern (New)</div>
+        </div>
+        <div class="canvas-wrap" id="canvasWrap" aria-label="Canvas preview area">
+          <div class="canvas-label">Preview pages — choose design tab, then Render</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="historyModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Download History</h2>
+        <button class="modal-close">×</button>
+      </div>
+      <div id="modalHistoryList"></div>
+    </div>
+  </div>
+
+  <script>
+    /* --- STATE & DOM --- */
+    const items = [];
+    let editIndex = -1;
+    let activeDesign = 'standard';
+    let downloadHistory = JSON.parse(localStorage.getItem('estimateHistory') || '[]');
+    let historyTimerInterval;
+    let exportDPR = 1; // 1 for PDF, screen uses devicePixelRatio
+
+    const qtyInput = document.getElementById('qtyInput');
+    const unitInput = document.getElementById('unitInput');
+    const descInput = document.getElementById('descInput');
+    const rateInput = document.getElementById('rateInput');
+    const addRowBtn = document.getElementById('addRowBtn');
+    const clearRowsBtn = document.getElementById('clearRowsBtn');
+    const previewBody = document.getElementById('previewBody');
+    const statusArea = document.getElementById('statusArea');
+    const historyList = document.getElementById('historyList');
+    const modalHistoryList = document.getElementById('modalHistoryList');
+    const historyModal = document.getElementById('historyModal');
+    const modalClose = document.querySelector('.modal-close');
+    const clearAllHistoryBtn = document.getElementById('clearAllHistoryBtn');
+    const msInput = document.getElementById('msInput');
+    const gstInput = document.getElementById('gstInput');
+    const addressInput = document.getElementById('addressInput');
+    const phoneInput = document.getElementById('phoneInput');
+    const transportInput = document.getElementById('transportInput');
+    const noInput = document.getElementById('noInput');
+    const dateInput = document.getElementById('dateInput');
+    const pfInput = document.getElementById('pfInput');
+    const cashInput = document.getElementById('cashInput');
+    const neftInput = document.getElementById('neftInput');
+    const renderBtn = document.getElementById('renderBtn');
+    const downloadBtn = document.getElementById('downloadBtn');
+    const downloadSimpleBtn = document.getElementById('downloadSimpleBtn');
+    const canvasWrap = document.getElementById('canvasWrap');
+    const PAGE_W = 650, PAGE_H = 950;
+    const SCREEN_DPR = window.devicePixelRatio || 1;
+
+    /* --- HELPERS --- */
+    function isNumeric(n){ return n !== '' && !isNaN(parseFloat(n)) && isFinite(n); }
+    function toNum(v){ return isNumeric(v) ? parseFloat(v) : 0; }
+    function fmtIndian(n){ return new Intl.NumberFormat('en-IN').format(Math.round(n || 0)); }
+    function fmtCurrency(n){ return '₹' + fmtIndian(n); }
+    function escapeHtml(s){ return s ? String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;') : ''; }
+
+    function showStatus(message, type = 'success') {
+      statusArea.innerHTML = `<div class="status-message status-${type}">${message}</div>`;
+      const el = statusArea.firstElementChild;
+      el.style.display = 'block';
+      if (type === 'success') setTimeout(() => el.style.display = 'none', 4000);
+    }
+
+    function formatTimeRemaining(expiryTime) {
+      const remaining = expiryTime - Date.now();
+      if (remaining <= 0) return 'Expired';
+      const hours = Math.floor(remaining / (1000 * 60 * 60));
+      const minutes = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
+      return `${hours}h ${minutes}m`;
+    }
+
+    /* --- HISTORY --- */
+    function saveToHistory(type = 'full') {
+      if (type !== 'full') return;
+      const entry = {
+        id: Date.now(),
+        timestamp: new Date().toISOString(),
+        expiryTime: Date.now() + 8*60*60*1000,
+        type, customer: msInput.value, date: dateInput.value,
+        items: [...items],
+        details: {
+          address: addressInput.value, gst: gstInput.value,
+          transport: transportInput.value, vehicle: noInput.value,
+          phone: phoneInput.value, pf: pfInput.value,
+          cash: cashInput.value, neft: neftInput.value
+        }
+      };
+      downloadHistory.unshift(entry);
+      if (downloadHistory.length > 50) downloadHistory = downloadHistory.slice(0, 50);
+      localStorage.setItem('estimateHistory', JSON.stringify(downloadHistory));
+      refreshHistoryList();
+      startHistoryTimer();
+    }
+
+    function cleanupExpiredHistory() {
+      const now = Date.now();
+      const newHistory = downloadHistory.filter(e => e.expiryTime > now);
+      if (newHistory.length !== downloadHistory.length) {
+        downloadHistory = newHistory;
+        localStorage.setItem('estimateHistory', JSON.stringify(downloadHistory));
+        refreshHistoryList();
+      }
+    }
+
+    function startHistoryTimer() {
+      clearInterval(historyTimerInterval);
+      historyTimerInterval = setInterval(() => {
+        cleanupExpiredHistory();
+        refreshHistoryList();
+      }, 60000);
+    }
+
+    function deleteHistoryEntry(id) {
+      if (confirm('Delete this entry?')) {
+        downloadHistory = downloadHistory.filter(e => e.id !== id);
+        localStorage.setItem('estimateHistory', JSON.stringify(downloadHistory));
+        refreshHistoryList();
+        showStatus('Entry deleted', 'success');
+      }
+    }
+
+    function refreshHistoryList() {
+      historyList.innerHTML = downloadHistory.length === 0
+        ? '<div class="empty-history">No download history yet</div>'
+        : '';
+      downloadHistory.slice(0, 5).forEach(entry => {
+        historyList.appendChild(createHistoryItem(entry));
+      });
+      modalHistoryList.innerHTML = '';
+      downloadHistory.forEach(entry => {
+        modalHistoryList.appendChild(createHistoryItem(entry, true));
+      });
+    }
+
+    function createHistoryItem(entry, isModal = false) {
+      const div = document.createElement('div');
+      div.className = 'history-item';
+      div.dataset.id = entry.id;
+      const total = entry.items.reduce((s, i) => s + toNum(i.amount), 0);
+      const date = new Date(entry.timestamp).toLocaleDateString();
+      const time = new Date(entry.timestamp).toLocaleTimeString().slice(0,5);
+      div.innerHTML = `
+        <div class="history-header">
+          <div class="history-title">${escapeHtml(entry.customer || 'Unnamed')}</div>
+          <div class="history-date">${date} ${time}</div>
+        </div>
+        <div class="history-preview">
+          <span>${entry.items.length} items</span>
+          <span>Customer PDF</span>
+          <span>${fmtCurrency(total)}</span>
+          <div class="history-timer">Expires in: ${formatTimeRemaining(entry.expiryTime)}</div>
+        </div>
+        <div class="history-actions">
+          <button class="history-delete-btn" onclick="event.stopPropagation(); deleteHistoryEntry(${entry.id})">Delete</button>
+        </div>`;
+      div.addEventListener('click', () => loadFromHistory(entry));
+      return div;
+    }
+
+    function loadFromHistory(entry) {
+      items.length = 0;
+      msInput.value = entry.customer || '';
+      dateInput.value = entry.date || '';
+      addressInput.value = entry.details.address || '';
+      gstInput.value = entry.details.gst || '';
+      transportInput.value = entry.details.transport || '';
+      noInput.value = entry.details.vehicle || '';
+      phoneInput.value = entry.details.phone || '';
+      pfInput.value = entry.details.pf || '';
+      cashInput.value = entry.details.cash || '';
+      neftInput.value = entry.details.neft || '';
+      entry.items.forEach(it => items.push({...it}));
+      refreshPreview();
+      renderAndShowPages();
+      showStatus(`Loaded: ${entry.customer || 'Estimate'}`, 'success');
+      historyModal.style.display = 'none';
+    }
+
+    function clearAllHistory() {
+      if (confirm('Clear all history?')) {
+        downloadHistory = [];
+        localStorage.setItem('estimateHistory', JSON.stringify(downloadHistory));
+        refreshHistoryList();
+        showStatus('History cleared', 'success');
+      }
+    }
+
+    /* --- PREVIEW TABLE --- */
+    function refreshPreview(){
+      previewBody.innerHTML = items.length === 0
+        ? '<tr><td colspan="6" style="text-align:center; padding:20px; color:var(--muted)">No items added yet</td></tr>'
+        : '';
+      items.forEach((it, i) => {
+        const amt = isNumeric(it.amount) ? it.amount : 0;
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td style="padding:6px 8px">${escapeHtml(it.qty)}</td>
+          <td style="padding:6px 8px">${escapeHtml(it.unit)}</td>
+          <td style="padding:6px 8px">${escapeHtml(it.desc)}</td>
+          <td style="text-align:right; padding:6px 8px">${fmtCurrency(it.rate)}</td>
+          <td style="text-align:right; padding:6px 8px">${fmtCurrency(amt)}</td>
+          <td style="text-align:center; padding:6px 8px">
+            <button class="link-btn" onclick="editRow(${i})">Edit</button>
+            <button class="link-btn" onclick="deleteRow(${i})">Delete</button>
+          </td>`;
+        previewBody.appendChild(tr);
+      });
+    }
+
+    window.editRow = function(i){
+      const it = items[i];
+      qtyInput.value = it.qty || '';
+      unitInput.value = it.unit || '';
+      descInput.value = it.desc || '';
+      rateInput.value = it.rate || '';
+      editIndex = i;
+      addRowBtn.textContent = 'Update Row';
+      qtyInput.focus();
+      showStatus(`Editing row ${i+1}`, 'success');
+    };
+
+    window.deleteRow = function(i){
+      if (confirm('Delete this row?')) {
+        items.splice(i,1);
+        refreshPreview();
+        renderAndShowPages();
+        showStatus('Row deleted', 'success');
+      }
+    };
+
+    addRowBtn.addEventListener('click', () => {
+      const qty = qtyInput.value.trim();
+      const unit = unitInput.value.trim();
+      const desc = descInput.value.trim();
+      const rate = rateInput.value.trim();
+      if (!qty && !unit && !desc && !rate) {
+        showStatus('Enter at least one field', 'error');
+        return;
+      }
+      let amount = 0;
+      if (isNumeric(qty) && isNumeric(rate)) amount = Math.round(parseFloat(qty) * parseFloat(rate));
+      const newItem = { qty, unit, desc, rate, amount };
+      if (editIndex >= 0) {
+        items[editIndex] = newItem;
+        editIndex = -1;
+        addRowBtn.textContent = 'Add / Update Row';
+        showStatus('Row updated', 'success');
+      } else {
+        items.push(newItem);
+        showStatus('Row added', 'success');
+      }
+      qtyInput.value = unitInput.value = descInput.value = rateInput.value = '';
+      refreshPreview();
+      renderAndShowPages();
+    });
+
+    clearRowsBtn.addEventListener('click', () => {
+      if (confirm('Clear all rows?')) {
+        items.length = 0;
+        refreshPreview();
+        renderAndShowPages();
+        showStatus('All rows cleared', 'success');
+      }
+    });
+
+    function sortByAmount(){
+      items.sort((a,b) => toNum(b.amount) - toNum(a.amount));
+      refreshPreview(); renderAndShowPages();
+      showStatus('Sorted by amount', 'success');
+    }
+
+    function reverseRows(){
+      items.reverse();
+      refreshPreview(); renderAndShowPages();
+      showStatus('Order reversed', 'success');
+    }
+
+    /* --- TABS --- */
+    document.querySelectorAll('.tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.tab').forEach(t => {
+          t.classList.remove('active');
+          t.setAttribute('aria-selected', 'false');
+        });
+        tab.classList.add('active');
+        tab.setAttribute('aria-selected', 'true');
+        activeDesign = tab.dataset.design;
+        renderAndShowPages();
+        showStatus(`Design: ${tab.textContent}`, 'success');
+      });
+      tab.addEventListener('keydown', e => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          tab.click();
+        }
+      });
+    });
+
+    /* --- CANVAS RENDERING --- */
+    function setPixelRatio(ctx, canvas, w, h){
+      const ratio = exportDPR;
+      canvas.width = Math.round(w * ratio);
+      canvas.height = Math.round(h * ratio);
+      canvas.style.width = w + 'px';
+      canvas.style.height = h + 'px';
+      ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+    }
+
+    const COL_QTY = 50, COL_UNIT = 50, COL_DESC = 300, COL_RATE = 80, COL_AMT = 122;
+
+    function drawDescriptionMiddle(ctx, text, x, y){
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(String(text || ''), x, y);
+    }
+
+    function renderPageStandard(ctx, itemsSubset, showTotals, pageNum=1, isSimple=false){
+      const W=PAGE_W, H=PAGE_H;
+      const left=24, right=W-24;
+      ctx.fillStyle='#fff'; ctx.fillRect(0,0,W,H);
+      ctx.strokeStyle='#222'; ctx.fillStyle='#222';
+      ctx.font='600 20px Arial'; ctx.textAlign='center';
+      ctx.fillText('ESTIMATE / QUOTATION', W/2, 44);
+      ctx.textAlign='left'; ctx.font='15px Arial';
+      if (pageNum===1){
+        ctx.fillText('Date: ' + (dateInput.value || ''), right-200, 78);
+        ctx.fillText('Name: ' + (msInput.value || ''), left, 110);
+        ctx.fillText('Address: ' + (addressInput.value || ''), left, 136);
+        ctx.fillText('GST No: ' + (gstInput.value || ''), left, 162);
+        ctx.beginPath(); ctx.moveTo(left,176); ctx.lineTo(right,176); ctx.stroke();
+        const infoY1 = 196, infoGap = 20;
+        ctx.fillText('Transport: ' + (transportInput.value || ''), left, infoY1);
+        ctx.fillText('Vehicle / Ref: ' + (noInput.value || ''), left, infoY1 + infoGap);
+        ctx.fillText('Phone: ' + (phoneInput.value || ''), left, infoY1 + infoGap*2);
+      } else {
+        ctx.fillText('Name: ' + (msInput.value || ''), left, 88);
+        ctx.fillText('Transport: ' + (transportInput.value || ''), left, 112);
+      }
+      const tableTop = (pageNum===1)?280:160;
+      const headerH = 34, rowH = 34;
+      const colDesc = isSimple ? COL_DESC + COL_RATE + COL_AMT : COL_DESC;
+      const colRate = isSimple ? 0 : COL_RATE;
+      const colAmt = isSimple ? 0 : COL_AMT;
+      const colsX = [left, left+COL_QTY, left+COL_QTY+COL_UNIT, left+COL_QTY+COL_UNIT+colDesc, left+COL_QTY+COL_UNIT+colDesc+colRate, right];
+      ctx.beginPath(); ctx.moveTo(left, tableTop); ctx.lineTo(right, tableTop); ctx.stroke();
+      ctx.font='600 15px Arial'; ctx.textAlign='center';
+      const midY = tableTop + headerH/2 + 6;
+      ctx.fillText('Qty', colsX[0] + COL_QTY/2, midY);
+      ctx.fillText('Unit', colsX[1] + COL_UNIT/2, midY);
+      ctx.fillText('Description', colsX[2] + colDesc/2, midY);
+      if (!isSimple) {
+        ctx.fillText('Rate', colsX[3] + colRate/2, midY);
+        ctx.fillText('Amount', colsX[4] + colAmt/2, midY);
+      }
+      let currentY = tableTop + headerH;
+      ctx.font='14px Arial'; ctx.fillStyle = '#222';
+      let total = 0;
+      itemsSubset.forEach(it => {
+        const yCenter = currentY + rowH/2 + 6;
+        ctx.beginPath(); ctx.moveTo(left, currentY); ctx.lineTo(right, currentY); ctx.stroke();
+        ctx.textAlign='center';
+        ctx.fillText(it.qty || '', colsX[0] + COL_QTY/2, yCenter);
+        ctx.fillText(it.unit || '', colsX[1] + COL_UNIT/2, yCenter);
+        drawDescriptionMiddle(ctx, it.desc, colsX[2] + 6, yCenter);
+        if (!isSimple) {
+          ctx.textAlign='right';
+          ctx.fillText((it.rate && it.rate!=='')?('₹'+fmtIndian(it.rate)):'', colsX[3] + colRate - 8, yCenter);
+          const amt = isNumeric(it.amount)?it.amount:0;
+          ctx.fillText('₹' + fmtIndian(amt), colsX[4] + colAmt - 12, yCenter);
+          total += amt;
+        }
+        currentY += rowH;
+      });
+      ctx.beginPath(); ctx.moveTo(left, currentY); ctx.lineTo(right, currentY); ctx.stroke();
+      const sep = isSimple ? [colsX[0],colsX[1],colsX[2],colsX[5]] : [colsX[0],colsX[1],colsX[2],colsX[3],colsX[4],colsX[5]];
+      sep.forEach(x=>{ ctx.beginPath(); ctx.moveTo(x, tableTop); ctx.lineTo(x, currentY); ctx.stroke(); });
+      if (showTotals && !isSimple){
+        const pf = toNum(pfInput.value), cash = toNum(cashInput.value), neft = toNum(neftInput.value);
+        const due = Math.round(total + pf - cash - neft);
+        const boxW = right - left, boxH = 34;
+        let sY = currentY + 16;
+        ctx.font = '600 15px Arial'; ctx.textAlign = 'right';
+        ctx.strokeRect(left, sY, boxW, boxH);
+        ctx.fillText('Total Amount: ' + fmtCurrency(total), left + boxW - 12, sY + 22); sY += boxH;
+        ctx.strokeRect(left, sY, boxW, boxH);
+        ctx.fillText('P/F Amount: ' + fmtCurrency(pf), left + boxW - 12, sY + 22); sY += boxH;
+        if (cash) { ctx.strokeRect(left, sY, boxW, boxH); ctx.fillText('Cash: ' + fmtCurrency(cash), left + boxW - 12, sY + 22); sY += boxH; }
+        if (neft) { ctx.strokeRect(left, sY, boxW, boxH); ctx.fillText('NEFT: ' + fmtCurrency(neft), left + boxW - 12, sY + 22); sY += boxH; }
+        ctx.strokeRect(left, sY, boxW, boxH);
+        ctx.fillText('Due: ' + fmtCurrency(due), left + boxW - 12, sY + 22);
+      }
+      return total;
+    }
+
+    function renderPageModern(ctx, itemsSubset, showTotals, pageNum=1, isSimple=false){
+      const W=PAGE_W, H=PAGE_H;
+      const left=30, right=W-30;
+      ctx.fillStyle='#fff'; ctx.fillRect(0,0,W,H);
+      ctx.fillStyle = '#0b6fb0'; ctx.fillRect(0,0,W,72);
+      ctx.fillStyle = '#fff'; ctx.font = '700 20px Arial'; ctx.textAlign = 'center';
+      ctx.fillText('ESTIMATE / QUOTATION', W/2, 46);
+      ctx.fillStyle = '#0b2f4a'; ctx.font = '600 14px Arial'; ctx.textAlign = 'left';
+      ctx.fillText('Name: ' + (msInput.value || ''), left, 98);
+      ctx.font = '13px Arial'; ctx.fillStyle = '#333';
+      ctx.fillText('Date: ' + (dateInput.value || ''), right - 160, 98);
+      ctx.fillText('Address: ' + (addressInput.value || ''), left, 120);
+      ctx.fillText('GST No: ' + (gstInput.value || ''), left, 140);
+      ctx.beginPath(); ctx.moveTo(left, 154); ctx.lineTo(right, 154); ctx.strokeStyle = '#e6eef6'; ctx.stroke();
+      if (pageNum === 1){
+        const infoY1 = 172, gap = 20;
+        ctx.fillStyle = '#333';
+        ctx.fillText('Transport: ' + (transportInput.value || ''), left, infoY1);
+        ctx.fillText('Vehicle / Ref: ' + (noInput.value || ''), left, infoY1 + gap);
+        ctx.fillText('Phone: ' + (phoneInput.value || ''), left, infoY1 + gap*2);
+      }
+      const tableTop = (pageNum===1)?240:150;
+      const headerH = 36, rowH = 36;
+      const colDesc = isSimple ? COL_DESC + COL_RATE + COL_AMT : COL_DESC;
+      const colsX = [left, left+COL_QTY, left+COL_QTY+COL_UNIT, left+COL_QTY+COL_UNIT+colDesc, left+COL_QTY+COL_UNIT+colDesc+COL_RATE, right];
+      ctx.beginPath(); ctx.moveTo(left, tableTop); ctx.lineTo(right, tableTop); ctx.strokeStyle='#e6eef6'; ctx.stroke();
+      ctx.font='700 14px Arial'; ctx.fillStyle='#0b2f4a'; ctx.textAlign='center';
+      const midY = tableTop + headerH/2 + 8;
+      ctx.fillText('Qty', colsX[0] + COL_QTY/2, midY);
+      ctx.fillText('Unit', colsX[1] + COL_UNIT/2, midY);
+      ctx.fillText('Description', colsX[2] + colDesc/2, midY);
+      if (!isSimple) {
+        ctx.fillText('Rate', colsX[3] + COL_RATE/2, midY);
+        ctx.fillText('Amount', colsX[4] + COL_AMT/2, midY);
+      }
+      let currentY = tableTop + headerH;
+      ctx.font='14px Arial'; ctx.fillStyle='#222';
+      let total = 0;
+      itemsSubset.forEach(it => {
+        const yCenter = currentY + rowH/2 + 6;
+        ctx.beginPath(); ctx.moveTo(left, currentY); ctx.lineTo(right, currentY); ctx.strokeStyle='#f0f3f6'; ctx.stroke();
+        ctx.textAlign='center';
+        ctx.fillText(it.qty || '', colsX[0] + COL_QTY/2, yCenter);
+        ctx.fillText(it.unit || '', colsX[1] + COL_UNIT/2, yCenter);
+        drawDescriptionMiddle(ctx, it.desc, colsX[2] + 4, yCenter);
+        if (!isSimple) {
+          ctx.textAlign='right';
+          ctx.fillText((it.rate && it.rate!=='')?('₹'+fmtIndian(it.rate)):'', colsX[3] + COL_RATE - 8, yCenter);
+          const amt = isNumeric(it.amount)?it.amount:0;
+          ctx.fillText('₹'+fmtIndian(amt), colsX[4] + COL_AMT - 12, yCenter);
+          total += amt;
+        }
+        currentY += rowH;
+      });
+      ctx.beginPath(); ctx.moveTo(left, currentY); ctx.lineTo(right, currentY); ctx.strokeStyle='#e6eef6'; ctx.stroke();
+      if (showTotals && !isSimple){
+        const pf = toNum(pfInput.value), cash = toNum(cashInput.value), neft = toNum(neftInput.value);
+        const due = Math.round(total + pf - cash - neft);
+        const boxW = right - left, boxH = 38;
+        let sY = currentY + 18;
+        ctx.fillStyle = '#f6fbff';
+        ctx.fillRect(left, sY, boxW, boxH); ctx.strokeStyle='#e6eef6'; ctx.strokeRect(left, sY, boxW, boxH);
+        ctx.fillStyle = '#0b2f4a'; ctx.font = '600 15px Arial'; ctx.textAlign='right';
+        ctx.fillText('Total Amount: ' + fmtCurrency(total), left + boxW - 12, sY + 24); sY += boxH;
+        ctx.fillStyle = '#f6fbff'; ctx.fillRect(left, sY, boxW, boxH); ctx.strokeRect(left, sY, boxW, boxH);
+        ctx.fillStyle = '#333'; ctx.fillText('P/F Amount: ' + fmtCurrency(pf), left + boxW - 12, sY + 24); sY += boxH;
+        if (cash) { ctx.fillStyle = '#fff'; ctx.fillRect(left, sY, boxW, boxH); ctx.strokeRect(left, sY, boxW, boxH);
+          ctx.fillStyle='#333'; ctx.fillText('Cash: ' + fmtCurrency(cash), left + boxW - 12, sY + 24); sY += boxH; }
+        if (neft) { ctx.fillStyle = '#fff'; ctx.fillRect(left, sY, boxW, boxH); ctx.strokeRect(left, sY, boxW, boxH);
+          ctx.fillStyle='#333'; ctx.fillText('NEFT: ' + fmtCurrency(neft), left + boxW - 12, sY + 24); sY += boxH; }
+        ctx.fillStyle = '#0b6fb0'; ctx.fillRect(left, sY, boxW, boxH);
+        ctx.fillStyle = '#fff'; ctx.font='700 16px Arial';
+        ctx.fillText('Due: ' + fmtCurrency(due), left + boxW - 16, sY + 26);
+      }
+      return total;
+    }
+
+    function buildPagesFromItems(itemsArr, isSimple = false){
+      const pages = [];
+      let idx = 0, pageNum = 1;
+      while (idx < itemsArr.length) {
+        let take;
+        if (pageNum === 1) {
+          take = (itemsArr.length - idx <= 13) ? (itemsArr.length - idx) :
+                 (itemsArr.length - idx <= 18) ? 13 : 18;
+        } else {
+          take = (itemsArr.length - idx <= 16) ? (itemsArr.length - idx) :
+                 (itemsArr.length - idx <= 21) ? 16 : 21;
+        }
+        const subset = itemsArr.slice(idx, idx + take);
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        exportDPR = SCREEN_DPR; // high-res for screen
+        setPixelRatio(ctx, canvas, PAGE_W, PAGE_H);
+        const showTotals = (idx + take) >= itemsArr.length;
+        if (activeDesign === 'standard') renderPageStandard(ctx, subset, showTotals, pageNum, isSimple);
+        else renderPageModern(ctx, subset, showTotals, pageNum, isSimple);
+        pages.push(canvas);
+        idx += take;
+        pageNum++;
+      }
+      if (pages.length === 0){
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        exportDPR = SCREEN_DPR;
+        setPixelRatio(ctx, canvas, PAGE_W, PAGE_H);
+        if (activeDesign === 'standard') renderPageStandard(ctx, [], true, 1, isSimple);
+        else renderPageModern(ctx, [], true, 1, isSimple);
+        pages.push(canvas);
+      }
+      return pages;
+    }
+
+    function renderAndShowPages(){
+      canvasWrap.querySelectorAll('.canvas-container').forEach(e=>e.remove());
+      const pages = buildPagesFromItems(items);
+      pages.forEach(canvas => {
+        const div = document.createElement('div');
+        div.className = 'canvas-container';
+        div.appendChild(canvas);
+        canvasWrap.appendChild(div);
+      });
+    }
+
+    /* --- OPTIMIZED PDF DOWNLOAD --- */
+    async function downloadPDF(isSimple = false){
+      if (items.length === 0 && !confirm('No items. Download empty estimate?')) return;
+
+      const button = isSimple ? downloadSimpleBtn : downloadBtn;
+      const originalText = button.textContent;
+      button.innerHTML = '<span class="loading"></span> Generating PDF...';
+      button.disabled = true;
+
+      try {
+        // Render at 1× for tiny perfect PDF
+        exportDPR = 1;
+        const pages = buildPagesFromItems(items, isSimple);
+        exportDPR = SCREEN_DPR; // restore for screen
+
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF({ unit: 'px', format: [PAGE_W, PAGE_H] });
+
+        for (let i = 0; i < pages.length; i++){
+          const dataUrl = pages[i].toDataURL('image/jpeg', 0.85); // 85% quality = perfect
+          if (i === 0) pdf.addImage(dataUrl, 'JPEG', 0, 0, PAGE_W, PAGE_H);
+          else { pdf.addPage([PAGE_W, PAGE_H]); pdf.addImage(dataUrl, 'JPEG', 0, 0, PAGE_W, PAGE_H); }
+        }
+
+        const typeLabel = isSimple ? 'Employees' : 'Customer';
+        const filename = (msInput.value || 'Estimate').trim().replace(/\s+/g,'_') + `_${typeLabel}.pdf`;
+        pdf.save(filename, { returnPromise: true }).then(() => {});
+
+        if (!isSimple) saveToHistory('full');
+        const sizeKB = Math.round(pages.length * 180);
+        showStatus(`PDF for ${typeLabel} downloaded (${sizeKB} KB) — super small & sharp!`, 'success');
+      } catch (err) {
+        console.error(err);
+        showStatus('PDF generation failed', 'error');
+      } finally {
+        button.textContent = originalText;
+        button.disabled = false;
+      }
+    }
+
+    /* --- EVENTS --- */
+    renderBtn.onclick = () => { refreshPreview(); renderAndShowPages(); showStatus('Preview updated', 'success'); };
+    downloadBtn.onclick = () => { refreshPreview(); renderAndShowPages(); downloadPDF(false); };
+    downloadSimpleBtn.onclick = () => { refreshPreview(); renderAndShowPages(); downloadPDF(true); };
+    modalClose.onclick = () => historyModal.style.display = 'none';
+    window.onclick = e => { if (e.target === historyModal) historyModal.style.display = 'none'; };
+    clearAllHistoryBtn.onclick = clearAllHistory;
+
+    dateInput.addEventListener('focus', () => {
+      if (!dateInput.value) {
+        const t = new Date();
+        dateInput.value = `${String(t.getDate()).padStart(2,'0')}-${String(t.getMonth()+1).padStart(2,'0')}-${t.getFullYear()}`;
+      }
+    });
+
+    [qtyInput, unitInput, descInput, rateInput].forEach(inp => {
+      inp.addEventListener('keydown', e => {
+        if (e.key === 'Enter') { e.preventDefault(); addRowBtn.click(); }
+      });
+    });
+
+    /* --- INIT --- */
+    refreshPreview();
+    renderAndShowPages();
+    cleanupExpiredHistory();
+    refreshHistoryList();
+    startHistoryTimer();
+  </script>
+</body>
+</html>
