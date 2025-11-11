@@ -1469,8 +1469,7 @@
           }
         }
         
-        const typeLabel = isSimple ? 'Employees' : 'Customer';
-        const filename = (msInput.value || 'Estimate').trim().replace(/\s+/g,'_') + `_${typeLabel}.pdf`;
+        const filename = (msInput.value || 'Estimate').trim().replace(/\s+/g,'_') + '.pdf';
         
         // Force download instead of opening in viewer
         const pdfBlob = pdf.output('blob');
@@ -1560,3 +1559,4 @@
   </script>
 </body>
 </html>
+
