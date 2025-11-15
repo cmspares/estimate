@@ -17,7 +17,6 @@
     --pad:14px;
   }
 
-  /* Improved body styling */
   body {
     font-family: "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     margin: 0;
@@ -35,13 +34,25 @@
     margin-bottom:12px; 
   }
   
-  h1 { 
-    font-size:20px; 
-    margin:0; 
-    color:var(--accent-dark); 
+  .nav-title,
+  .topbar h1 {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--accent-dark);
+    margin: 0;
+    text-decoration: none;
+  }
+  .nav-title:hover,
+  .topbar h1:hover {
+    text-decoration: none;
+    color: var(--accent-dark);
+  }
+  .nav-separator {
+    font-size: 18px;
+    font-weight: bold;
+    color: var(--muted);
   }
 
-  /* Full width, left aligned layout */
   .layout {
     display: flex;
     gap: 20px;
@@ -216,7 +227,6 @@
     font-weight:600; 
   }
 
-  /* Improved canvas area */
   .canvas-wrap {
     flex: 1 1 auto;
     min-width: 320px;
@@ -240,7 +250,6 @@
     box-sizing: border-box;
   }
   
-  /* canvas scales to available width, but not larger than natural */
   .canvas-container canvas {
     display: block;
     width: 100%;
@@ -301,7 +310,6 @@
     text-decoration: underline;
   }
   
-  /* Loading indicator */
   .loading {
     display: inline-block;
     width: 20px;
@@ -318,7 +326,6 @@
     to { transform: rotate(360deg); }
   }
   
-  /* Status message */
   .status-message {
     padding: 8px 12px;
     border-radius: 4px;
@@ -339,7 +346,6 @@
     border: 1px solid #ffcdd2;
   }
 
-  /* History Panel */
   .history-panel {
     background: var(--panel-bg);
     border-radius: var(--radius);
@@ -443,7 +449,6 @@
     font-style: italic;
   }
 
-  /* Modal styles */
   .modal {
     display: none;
     position: fixed;
@@ -482,7 +487,6 @@
     color: var(--muted);
   }
 
-  /* Responsive improvements */
   @media (max-width: 1020px){ 
     .layout { 
       flex-direction:column; 
@@ -530,12 +534,13 @@
   }
 </style>
 
-<!-- jsPDF CDN -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
 <body>
   <div class="topbar">
-      <h1>Estimate</h1>
+    <a href="quotation.html" class="nav-title">Quotation</a>
+    <span class="nav-separator">></span>
+    <span class="nav-title">Estimate</span>
   </div>
 
   <div class="layout">
@@ -566,6 +571,11 @@
       
       <div class="field">
         <input id="neftInput" type="number" placeholder="NEFT (₹)" min="0">
+      </div>
+
+      <!-- DEPOSIT FIELD -->
+      <div class="field">
+        <input id="depositInput" type="number" placeholder="Deposit (₹)" min="0">
       </div>
 
       <hr style="margin:12px 0">
@@ -621,6 +631,11 @@
         <button id="downloadSimpleBtn" class="btn-tertiary">PDF for Employees</button>
       </div>
 
+      <!-- VIEW HISTORY BUTTON -->
+      <div style="margin-top:12px;" class="buttons">
+        <button id="viewHistoryBtn" class="btn-secondary">View History</button>
+      </div>
+
       <!-- History Section -->
       <div class="history-panel">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
@@ -673,7 +688,7 @@
     <div class="modal-content">
       <div class="modal-header">
         <h2>Download History</h2>
-        <button class="modal-close">&times;</button>
+        <button class="modal-close">×</button>
       </div>
       <div id="modalHistoryList"></div>
     </div>
@@ -691,6 +706,19 @@
     const unitInput = document.getElementById('unitInput');
     const descInput = document.getElementById('descInput');
     const rateInput = document.getElementById('rateInput');
+    rateInput.addEventListener('input', () => {
+      const val = rateInput.value.trim();
+      if (val.includes('/')) {
+        const parts = val.split('/');
+        if (parts.length === 2) {
+          const a = parseFloat(parts[0]);
+          const b = parseFloat(parts[1]);
+          if (!isNaN(a) && !isNaN(b) && b !== 0) {
+            rateInput.value = (a / b).toFixed(2);
+          }
+        }
+      }
+    });
     const addRowBtn = document.getElementById('addRowBtn');
     const clearRowsBtn = document.getElementById('clearRowsBtn');
     const previewBody = document.getElementById('previewBody');
@@ -700,6 +728,7 @@
     const historyModal = document.getElementById('historyModal');
     const modalClose = document.querySelector('.modal-close');
     const clearAllHistoryBtn = document.getElementById('clearAllHistoryBtn');
+    const viewHistoryBtn = document.getElementById('viewHistoryBtn');
 
     const msInput = document.getElementById('msInput');
     const gstInput = document.getElementById('gstInput');
@@ -709,9 +738,9 @@
     const noInput = document.getElementById('noInput');
     const dateInput = document.getElementById('dateInput');
     const pfInput = document.getElementById('pfInput');
-
     const cashInput = document.getElementById('cashInput');
     const neftInput = document.getElementById('neftInput');
+    const depositInput = document.getElementById('depositInput'); // NEW
 
     const renderBtn = document.getElementById('renderBtn');
     const downloadBtn = document.getElementById('downloadBtn');
@@ -719,7 +748,7 @@
     const canvasWrap = document.getElementById('canvasWrap');
 
     const PAGE_W = 650, PAGE_H = 950;
-    const DPR = 1; // Reduced DPR for smaller file size
+    const DPR = 1;
 
     /* --- helpers --- */
     function isNumeric(n){ return n !== '' && !isNaN(parseFloat(n)) && isFinite(n); }
@@ -728,44 +757,35 @@
     function fmtCurrency(n){ return '₹' + fmtIndian(n); }
     function escapeHtml(s){ return s ? String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;') : ''; }
     
-    // Show status message
     function showStatus(message, type = 'success') {
       statusArea.innerHTML = `<div class="status-message status-${type}">${message}</div>`;
       const statusEl = statusArea.firstElementChild;
       statusEl.style.display = 'block';
-      
-      // Auto-hide success messages after 3 seconds
       if (type === 'success') {
-        setTimeout(() => {
-          statusEl.style.display = 'none';
-        }, 3000);
+        setTimeout(() => { statusEl.style.display = 'none'; }, 3000);
       }
     }
 
-    // Format time remaining
     function formatTimeRemaining(expiryTime) {
       const now = Date.now();
       const remaining = expiryTime - now;
-      
       if (remaining <= 0) return 'Expired';
-      
       const hours = Math.floor(remaining / (1000 * 60 * 60));
       const minutes = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
-      
       return `${hours}h ${minutes}m`;
     }
 
-    /* --- History Management --- */
+    /* --- History Management (Replace same customer) --- */
     function saveToHistory(type = 'full') {
-      // Only save "PDF for Customer" (full) to history, not "PDF for Employees" (simple)
       if (type !== 'full') return;
-      
-      const historyEntry = {
+
+      const customer = msInput.value.trim();
+      const newEntry = {
         id: Date.now(),
         timestamp: new Date().toISOString(),
-        expiryTime: Date.now() + (8 * 60 * 60 * 1000), // 8 hours from now
+        expiryTime: Date.now() + (8 * 60 * 60 * 1000),
         type: type,
-        customer: msInput.value,
+        customer: customer,
         date: dateInput.value,
         items: [...items],
         details: {
@@ -776,17 +796,17 @@
           phone: phoneInput.value,
           pf: pfInput.value,
           cash: cashInput.value,
-          neft: neftInput.value
+          neft: neftInput.value,
+          deposit: depositInput.value // NEW
         }
       };
-      
-      downloadHistory.unshift(historyEntry);
-      
-      // Keep only last 50 entries
-      if (downloadHistory.length > 50) {
-        downloadHistory = downloadHistory.slice(0, 50);
-      }
-      
+
+      // Remove existing entry for same customer
+      downloadHistory = downloadHistory.filter(e => e.customer !== customer);
+      downloadHistory.unshift(newEntry);
+
+      if (downloadHistory.length > 50) downloadHistory.pop();
+
       localStorage.setItem('estimateHistory', JSON.stringify(downloadHistory));
       refreshHistoryList();
       startHistoryTimer();
@@ -796,7 +816,6 @@
       const now = Date.now();
       const initialLength = downloadHistory.length;
       downloadHistory = downloadHistory.filter(entry => entry.expiryTime > now);
-      
       if (downloadHistory.length !== initialLength) {
         localStorage.setItem('estimateHistory', JSON.stringify(downloadHistory));
         refreshHistoryList();
@@ -804,14 +823,11 @@
     }
 
     function startHistoryTimer() {
-      if (historyTimerInterval) {
-        clearInterval(historyTimerInterval);
-      }
-      
+      if (historyTimerInterval) clearInterval(historyTimerInterval);
       historyTimerInterval = setInterval(() => {
         cleanupExpiredHistory();
         refreshHistoryList();
-      }, 60000); // Check every minute
+      }, 60000);
     }
 
     function deleteHistoryEntry(id) {
@@ -824,27 +840,29 @@
     }
 
     function refreshHistoryList() {
-      // Update sidebar history
       historyList.innerHTML = '';
-      
       if (downloadHistory.length === 0) {
         historyList.innerHTML = '<div class="empty-history">No download history yet</div>';
         return;
       }
-      
-      // Show last 5 in sidebar
       const recentHistory = downloadHistory.slice(0, 5);
       recentHistory.forEach(entry => {
         const historyItem = createHistoryItem(entry);
         historyList.appendChild(historyItem);
       });
-      
-      // Update modal history
+      populateModalHistory();
+    }
+
+    function populateModalHistory() {
       modalHistoryList.innerHTML = '';
-      downloadHistory.forEach(entry => {
-        const historyItem = createHistoryItem(entry, true);
-        modalHistoryList.appendChild(historyItem);
-      });
+      if (downloadHistory.length === 0) {
+        modalHistoryList.innerHTML = '<div class="empty-history">No download history yet</div>';
+      } else {
+        downloadHistory.forEach(entry => {
+          const item = createHistoryItem(entry, true);
+          modalHistoryList.appendChild(item);
+        });
+      }
     }
 
     function createHistoryItem(entry, isModal = false) {
@@ -854,7 +872,6 @@
       
       const itemCount = entry.items.length;
       const totalAmount = entry.items.reduce((sum, item) => sum + (isNumeric(item.amount) ? parseFloat(item.amount) : 0), 0);
-      
       const date = new Date(entry.timestamp).toLocaleDateString();
       const time = new Date(entry.timestamp).toLocaleTimeString();
       const timeRemaining = formatTimeRemaining(entry.expiryTime);
@@ -876,16 +893,12 @@
           </button>
         </div>
       `;
-      
       div.addEventListener('click', () => loadFromHistory(entry));
       return div;
     }
 
     function loadFromHistory(entry) {
-      // Clear current form
       items.length = 0;
-      
-      // Load basic details
       msInput.value = entry.customer || '';
       dateInput.value = entry.date || '';
       addressInput.value = entry.details.address || '';
@@ -896,17 +909,11 @@
       pfInput.value = entry.details.pf || '';
       cashInput.value = entry.details.cash || '';
       neftInput.value = entry.details.neft || '';
-      
-      // Load items
-      entry.items.forEach(item => {
-        items.push({...item});
-      });
-      
+      depositInput.value = entry.details.deposit || ''; // NEW
+      entry.items.forEach(item => items.push({...item}));
       refreshPreview();
       renderAndShowPages();
       showStatus(`Loaded estimate from ${new Date(entry.timestamp).toLocaleString()}`, 'success');
-      
-      // Close modal if open
       historyModal.style.display = 'none';
     }
 
@@ -926,7 +933,6 @@
         previewBody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:20px; color:var(--muted)">No items added yet</td></tr>';
         return;
       }
-      
       items.forEach((it, i) => {
         const tr = document.createElement('tr');
         const amt = isNumeric(it.amount) ? it.amount : 0;
@@ -966,22 +972,18 @@
       }
     };
 
-    /* add/update row (relaxed) */
     addRowBtn.addEventListener('click', () => {
       const qty = qtyInput.value.trim();
       const unit = unitInput.value.trim();
       const desc = descInput.value.trim();
       const rate = rateInput.value.trim();
-      
       if (!qty && !unit && !desc && !rate) {
         showStatus('Please enter at least one field (Qty, Unit, Description or Rate).', 'error');
         return;
       }
-      
       let amount = 0;
       if (isNumeric(qty) && isNumeric(rate)) amount = Math.round(parseFloat(qty) * parseFloat(rate));
       const newItem = { qty, unit, desc, rate, amount };
-      
       if (editIndex >= 0) { 
         items[editIndex] = newItem; 
         editIndex = -1; 
@@ -991,7 +993,6 @@
         items.push(newItem);
         showStatus('Row added successfully', 'success');
       }
-      
       qtyInput.value = unitInput.value = descInput.value = rateInput.value = '';
       refreshPreview();
       renderAndShowPages();
@@ -1019,7 +1020,6 @@
       showStatus('Items order reversed', 'success');
     }
 
-    /* --- Tabs handling for designs --- */
     document.querySelectorAll('.tab').forEach(tab=>{
       tab.addEventListener('click', () => {
         document.querySelectorAll('.tab').forEach(t=>{
@@ -1032,8 +1032,6 @@
         renderAndShowPages();
         showStatus(`Switched to ${tab.textContent} design`, 'success');
       });
-      
-      // Add keyboard support for tabs
       tab.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault();
@@ -1042,8 +1040,7 @@
       });
     });
 
-    /* --- Canvas rendering functions & utilities --- */
-
+    /* --- Canvas rendering --- */
     function setPixelRatio(ctx, canvas, w, h){
       canvas.width = Math.round(w * DPR);
       canvas.height = Math.round(h * DPR);
@@ -1052,30 +1049,22 @@
       ctx.setTransform(DPR,0,0,DPR,0,0);
     }
 
-    /* column widths chosen to fit usable width (PAGE_W - left - right padding = 650 - 48 = 602) */
-    const COL_QTY = 50;
-    const COL_UNIT = 50;
-    const COL_DESC = 300;
-    const COL_RATE = 80;
-    const COL_AMT = 122; // sums to 602
+    const COL_QTY = 50, COL_UNIT = 50, COL_DESC = 300, COL_RATE = 80, COL_AMT = 122;
 
-    /* Utility: draw single-line description left aligned and vertically middle aligned */
     function drawDescriptionMiddle(ctx, text, x, y){
       ctx.textAlign = 'left';
       ctx.textBaseline = 'middle';
       ctx.fillText(String(text || ''), x, y);
     }
 
-    /* Standard design (professional) */
     function renderPageStandard(ctx, itemsSubset, showTotals, pageNum=1, isSimple = false){
       const W=PAGE_W, H=PAGE_H;
       const left=24, right=W-24;
       ctx.fillStyle='#fff'; ctx.fillRect(0,0,W,H);
       ctx.strokeStyle='#222'; ctx.fillStyle='#222';
 
-      // Header
       ctx.font='600 20px Arial'; ctx.textAlign='center';
-      ctx.fillText('ESTIMATE / QUOTATION', W/2, 44);
+      ctx.fillText('ESTIMATE', W/2, 44);
 
       ctx.textAlign='left'; ctx.font='15px Arial';
       if (pageNum===1){
@@ -1084,38 +1073,22 @@
         ctx.fillText('Address: ' + (addressInput.value || ''), left, 136);
         ctx.fillText('GST No: ' + (gstInput.value || ''), left, 162);
         ctx.beginPath(); ctx.moveTo(left,176); ctx.lineTo(right,176); ctx.stroke();
-
-        // Stack Transport, Vehicle/Ref, Phone vertically
-        const infoY1 = 196;
-        const infoGap = 20;
-        const infoY2 = infoY1 + infoGap;
-        const infoY3 = infoY2 + infoGap;
-
+        const infoY1 = 196, infoGap = 20;
         ctx.fillText('Transport: ' + (transportInput.value || ''), left, infoY1);
-        ctx.fillText('Vehicle / Ref: ' + (noInput.value || ''), left, infoY2);
-        ctx.fillText('Phone: ' + (phoneInput.value || ''), left, infoY3);
+        ctx.fillText('Vehicle / Ref: ' + (noInput.value || ''), left, infoY1 + infoGap);
+        ctx.fillText('Phone: ' + (phoneInput.value || ''), left, infoY1 + infoGap * 2);
       } else {
         ctx.fillText('Name: ' + (msInput.value || ''), left, 88);
         ctx.fillText('Transport: ' + (transportInput.value || ''), left, 112);
       }
 
-      // Table headings / columns
-      const tableTop = (pageNum===1)?280:160; // moved down on page 1 to fit stacked info
+      const tableTop = (pageNum===1)?280:160;
       const headerH = 34, rowH = 34;
-
       const colQty = COL_QTY, colUnit = COL_UNIT, colDesc = isSimple ? COL_DESC + COL_RATE + COL_AMT : COL_DESC, colRate = isSimple ? 0 : COL_RATE, colAmt = isSimple ? 0 : COL_AMT;
-      const colsX = [
-        left,
-        left + colQty,
-        left + colQty + colUnit,
-        left + colQty + colUnit + colDesc,
-        left + colQty + colUnit + colDesc + colRate,
-        right
-      ];
+      const colsX = [left, left + colQty, left + colQty + colUnit, left + colQty + colUnit + colDesc, left + colQty + colUnit + colDesc + colRate, right];
 
       ctx.beginPath(); ctx.moveTo(left, tableTop); ctx.lineTo(right, tableTop); ctx.stroke();
-      ctx.font='600 15px Arial';
-      ctx.textAlign='center';
+      ctx.font='600 15px Arial'; ctx.textAlign='center';
       const midY = tableTop + headerH/2 + 6;
       ctx.fillText('Qty', colsX[0] + colQty/2, midY);
       ctx.fillText('Unit', colsX[1] + colUnit/2, midY);
@@ -1125,7 +1098,6 @@
         ctx.fillText('Amount', colsX[4] + colAmt/2, midY);
       }
 
-      // Rows
       let currentY = tableTop + headerH;
       ctx.font='14px Arial'; ctx.fillStyle = '#222';
       let total = 0;
@@ -1133,125 +1105,68 @@
       itemsSubset.forEach(it => {
         const yCenter = currentY + rowH/2 + 6;
         ctx.beginPath(); ctx.moveTo(left, currentY); ctx.lineTo(right, currentY); ctx.stroke();
-
-        // Qty center
         ctx.textAlign='center';
         ctx.fillText(it.qty || '', colsX[0] + colQty/2, yCenter);
-
-        // Unit center
         ctx.fillText(it.unit || '', colsX[1] + colUnit/2, yCenter);
-
-        // Description: left aligned and vertically middle aligned
         drawDescriptionMiddle(ctx, it.desc, colsX[2] + 6, yCenter);
-
         if (!isSimple) {
-          // Rate right inside rate column
           ctx.textAlign='right';
           ctx.fillText((it.rate && it.rate!=='')?('₹'+fmtIndian(it.rate)):'', colsX[3] + colRate - 8, yCenter);
-
-          // Amount right inside amount column
           const amt = isNumeric(it.amount)?it.amount:0;
           ctx.fillText('₹' + fmtIndian(amt), colsX[4] + colAmt - 12, yCenter);
-
           total += amt;
         }
         currentY += rowH;
       });
 
-      // bottom and vertical separators
       ctx.beginPath(); ctx.moveTo(left, currentY); ctx.lineTo(right, currentY); ctx.stroke();
       const separatorCols = isSimple ? [colsX[0],colsX[1],colsX[2],colsX[5]] : [colsX[0],colsX[1],colsX[2],colsX[3],colsX[4],colsX[5]];
       separatorCols.forEach(x=>{ ctx.beginPath(); ctx.moveTo(x, tableTop); ctx.lineTo(x, currentY); ctx.stroke(); });
 
-      // Totals block (only on last page / if showTotals true and not simple)
       if (showTotals && !isSimple){
-        const pf = toNum(pfInput.value), cash = toNum(cashInput.value), neft = toNum(neftInput.value);
-        const due = Math.round(total + pf - cash - neft);
+        const pf = toNum(pfInput.value), cash = toNum(cashInput.value), neft = toNum(neftInput.value), deposit = toNum(depositInput.value);
+        const due = Math.round(total + pf - cash - neft - deposit); // DEPOSIT SUBTRACTED
 
-        const boxW = right - left;
-        const boxH = 34;
-        const sX = left;
+        const boxW = right - left, boxH = 34, sX = left;
         let sY = currentY + 16;
 
-        ctx.font = '600 15px Arial';
-        ctx.textAlign = 'right';
-
-        ctx.strokeRect(sX, sY, boxW, boxH);
-        ctx.fillText('Total Amount: ' + fmtCurrency(total), sX + boxW - 12, sY + 22);
-        sY += boxH;
-
-        ctx.strokeRect(sX, sY, boxW, boxH);
-        ctx.fillText('P/F Amount: ' + fmtCurrency(pf), sX + boxW - 12, sY + 22);
-        sY += boxH;
-
-        if (cash !== 0){
-          ctx.strokeRect(sX, sY, boxW, boxH);
-          ctx.fillText('Cash: ' + fmtCurrency(cash), sX + boxW - 12, sY + 22);
-          sY += boxH;
-        }
-        if (neft !== 0){
-          ctx.strokeRect(sX, sY, boxW, boxH);
-          ctx.fillText('NEFT: ' + fmtCurrency(neft), sX + boxW - 12, sY + 22);
-          sY += boxH;
-        }
-
-        ctx.strokeRect(sX, sY, boxW, boxH);
-        ctx.fillText('Due: ' + fmtCurrency(due), sX + boxW - 12, sY + 22);
+        ctx.font = '600 15px Arial'; ctx.textAlign = 'right';
+        ctx.strokeRect(sX, sY, boxW, boxH); ctx.fillText('Total Amount: ' + fmtCurrency(total), sX + boxW - 12, sY + 22); sY += boxH;
+        ctx.strokeRect(sX, sY, boxW, boxH); ctx.fillText('P/F Amount: ' + fmtCurrency(pf), sX + boxW - 12, sY + 22); sY += boxH;
+        if (cash !== 0){ ctx.strokeRect(sX, sY, boxW, boxH); ctx.fillText('Cash: ' + fmtCurrency(cash), sX + boxW - 12, sY + 22); sY += boxH; }
+        if (neft !== 0){ ctx.strokeRect(sX, sY, boxW, boxH); ctx.fillText('NEFT: ' + fmtCurrency(neft), sX + boxW - 12, sY + 22); sY += boxH; }
+        if (deposit !== 0){ ctx.strokeRect(sX, sY, boxW, boxH); ctx.fillText('Deposit: ' + fmtCurrency(deposit), sX + boxW - 12, sY + 22); sY += boxH; } // NEW
+        ctx.strokeRect(sX, sY, boxW, boxH); ctx.fillText('Due: ' + fmtCurrency(due), sX + boxW - 12, sY + 22);
       }
 
       return total;
     }
 
-    /* Modern (new) design */
     function renderPageModern(ctx, itemsSubset, showTotals, pageNum=1, isSimple = false){
       const W=PAGE_W, H=PAGE_H;
       const left=30, right=W-30;
       ctx.fillStyle='#fff'; ctx.fillRect(0,0,W,H);
-
-      // header band
-      ctx.fillStyle = '#0b6fb0';
-      ctx.fillRect(0,0,W,72);
-      ctx.fillStyle = '#fff';
-      ctx.font = '700 20px Arial';
-      ctx.textAlign = 'center';
-      ctx.fillText('ESTIMATE / QUOTATION', W/2, 46);
-
-      // header details
-      ctx.fillStyle = '#0b2f4a';
-      ctx.font = '600 14px Arial';
-      ctx.textAlign = 'left';
-      ctx.fillText('Name: ' + (msInput.value || ''), left, 98);
-      ctx.font = '13px Arial';
-      ctx.fillStyle = '#333';
+      ctx.fillStyle = '#0b6fb0'; ctx.fillRect(0,0,W,72); ctx.fillStyle = '#fff';
+      ctx.font = '700 20px Arial'; ctx.textAlign = 'center'; ctx.fillText('ESTIMATE', W/2, 46);
+      ctx.fillStyle = '#0b2f4a'; ctx.font = '600 14px Arial'; ctx.textAlign = 'left';
+      ctx.fillText('Name: ' + (msInput.value || ''), left, 98); ctx.font = '13px Arial'; ctx.fillStyle = '#333';
       ctx.fillText('Date: ' + (dateInput.value || ''), right - 160, 98);
       ctx.fillText('Address: ' + (addressInput.value || ''), left, 120);
       ctx.fillText('GST No: ' + (gstInput.value || ''), left, 140);
       ctx.beginPath(); ctx.moveTo(left, 154); ctx.lineTo(right, 154); ctx.strokeStyle = '#e6eef6'; ctx.stroke();
 
-      // Stack Transport, Vehicle/Ref, Phone vertically on page 1
       if (pageNum === 1){
-        const infoY1 = 172;
-        const infoGap = 20;
-        const infoY2 = infoY1 + infoGap;
-        const infoY3 = infoY2 + infoGap;
+        const infoY1 = 172, infoGap = 20;
         ctx.fillStyle = '#333';
         ctx.fillText('Transport: ' + (transportInput.value || ''), left, infoY1);
-        ctx.fillText('Vehicle / Ref: ' + (noInput.value || ''), left, infoY2);
-        ctx.fillText('Phone: ' + (phoneInput.value || ''), left, infoY3);
+        ctx.fillText('Vehicle / Ref: ' + (noInput.value || ''), left, infoY1 + infoGap);
+        ctx.fillText('Phone: ' + (phoneInput.value || ''), left, infoY1 + infoGap * 2);
       }
 
-      // table headings / columns
-      const tableTop = (pageNum===1)?240:150; // moved down on page 1 to fit stacked info
+      const tableTop = (pageNum===1)?240:150;
       const headerH = 36, rowH = 36;
       const colQty = COL_QTY, colUnit = COL_UNIT, colDesc = isSimple ? COL_DESC + COL_RATE + COL_AMT : COL_DESC, colRate = isSimple ? 0 : COL_RATE, colAmt = isSimple ? 0 : COL_AMT;
-      const colsX = [
-        left,
-        left + colQty,
-        left + colQty + colUnit,
-        left + colQty + colUnit + colDesc,
-        left + colQty + colUnit + colDesc + colRate,
-        right
-      ];
+      const colsX = [left, left + colQty, left + colQty + colUnit, left + colQty + colUnit + colDesc, left + colQty + colUnit + colDesc + colRate, right];
 
       ctx.beginPath(); ctx.moveTo(left, tableTop); ctx.lineTo(right, tableTop); ctx.strokeStyle='#e6eef6'; ctx.stroke();
       ctx.font='700 14px Arial'; ctx.fillStyle='#0b2f4a'; ctx.textAlign='center';
@@ -1264,27 +1179,21 @@
         ctx.fillText('Amount', colsX[4] + colAmt/2, midY);
       }
 
-      // rows
       let currentY = tableTop + headerH;
       ctx.font='14px Arial'; ctx.fillStyle='#222';
       let total = 0;
       itemsSubset.forEach(it => {
         const yCenter = currentY + rowH/2 + 6;
         ctx.beginPath(); ctx.moveTo(left, currentY); ctx.lineTo(right, currentY); ctx.strokeStyle='#f0f3f6'; ctx.stroke();
-
         ctx.textAlign='center';
         ctx.fillText(it.qty || '', colsX[0] + colQty/2, yCenter);
         ctx.fillText(it.unit || '', colsX[1] + colUnit/2, yCenter);
-
-        // Description: left aligned and vertically middle aligned
         drawDescriptionMiddle(ctx, it.desc, colsX[2] + 4, yCenter);
-
         if (!isSimple) {
           ctx.textAlign='right';
           ctx.fillText((it.rate && it.rate!=='')?('₹'+fmtIndian(it.rate)):'', colsX[3] + colRate - 8, yCenter);
           const amt = isNumeric(it.amount)?it.amount:0;
           ctx.fillText('₹'+fmtIndian(amt), colsX[4] + colAmt - 12, yCenter);
-
           total += amt;
         }
         currentY += rowH;
@@ -1292,98 +1201,56 @@
 
       ctx.beginPath(); ctx.moveTo(left, currentY); ctx.lineTo(right, currentY); ctx.strokeStyle='#e6eef6'; ctx.stroke();
 
-      // totals area (only if not simple)
       if (showTotals && !isSimple){
-        const pf = toNum(pfInput.value), cash = toNum(cashInput.value), neft = toNum(neftInput.value);
-        const due = Math.round(total + pf - cash - neft);
+        const pf = toNum(pfInput.value), cash = toNum(cashInput.value), neft = toNum(neftInput.value), deposit = toNum(depositInput.value);
+        const due = Math.round(total + pf - cash - neft - deposit); // DEPOSIT SUBTRACTED
         const boxW = right - left, boxH = 38;
         let sX = left, sY = currentY + 18;
 
-        ctx.fillStyle = '#f6fbff';
-        ctx.fillRect(sX, sY, boxW, boxH); ctx.strokeStyle='#e6eef6'; ctx.strokeRect(sX, sY, boxW, boxH);
+        ctx.fillStyle = '#f6fbff'; ctx.fillRect(sX, sY, boxW, boxH); ctx.strokeStyle='#e6eef6'; ctx.strokeRect(sX, sY, boxW, boxH);
         ctx.fillStyle = '#0b2f4a'; ctx.font = '600 15px Arial'; ctx.textAlign='right';
         ctx.fillText('Total Amount: ' + fmtCurrency(total), sX + boxW - 12, sY + 24); sY += boxH;
 
         ctx.fillStyle = '#f6fbff'; ctx.fillRect(sX, sY, boxW, boxH); ctx.strokeRect(sX, sY, boxW, boxH);
         ctx.fillStyle = '#333'; ctx.font='600 15px Arial'; ctx.fillText('P/F Amount: ' + fmtCurrency(pf), sX + boxW - 12, sY + 24); sY += boxH;
 
-        if (cash !== 0){
-          ctx.fillStyle = '#fff'; ctx.fillRect(sX, sY, boxW, boxH); ctx.strokeRect(sX, sY, boxW, boxH);
-          ctx.fillStyle='#333'; ctx.font='600 15px Arial'; ctx.fillText('Cash: ' + fmtCurrency(cash), sX + boxW - 12, sY + 24); sY += boxH;
-        }
-        if (neft !== 0){
-          ctx.fillStyle = '#fff'; ctx.fillRect(sX, sY, boxW, boxH); ctx.strokeRect(sX, sY, boxW, boxH);
-          ctx.fillStyle='#333'; ctx.font='600 15px Arial'; ctx.fillText('NEFT: ' + fmtCurrency(neft), sX + boxW - 12, sY + 24); sY += boxH;
-        }
-
-        ctx.fillStyle = '#0b6fb0'; ctx.fillRect(sX, sY, boxW, boxH);
-        ctx.fillStyle = '#fff'; ctx.font='700 16px Arial'; ctx.textAlign='right';
-        ctx.fillText('Due: ' + fmtCurrency(due), sX + boxW - 16, sY + 26);
+        if (cash !== 0){ ctx.fillStyle = '#fff'; ctx.fillRect(sX, sY, boxW, boxH); ctx.strokeRect(sX, sY, boxW, boxH); ctx.fillStyle='#333'; ctx.fillText('Cash: ' + fmtCurrency(cash), sX + boxW - 12, sY + 24); sY += boxH; }
+        if (neft !== 0){ ctx.fillStyle = '#fff'; ctx.fillRect(sX, sY, boxW, boxH); ctx.strokeRect(sX, sY, boxW, boxH); ctx.fillStyle='#333'; ctx.fillText('NEFT: ' + fmtCurrency(neft), sX + boxW - 12, sY + 24); sY += boxH; }
+        if (deposit !== 0){ ctx.fillStyle = '#fff'; ctx.fillRect(sX, sY, boxW, boxH); ctx.strokeRect(sX, sY, boxW, boxH); ctx.fillStyle='#333'; ctx.fillText('Deposit: ' + fmtCurrency(deposit), sX + boxW - 12, sY + 24); sY += boxH; } // NEW
+        ctx.fillStyle = '#0b6fb0'; ctx.fillRect(sX, sY, boxW, boxH); ctx.fillStyle = '#fff'; ctx.font='700 16px Arial'; ctx.fillText('Due: ' + fmtCurrency(due), sX + boxW - 16, sY + 26);
       }
 
       return total;
     }
 
-    /* Build canvases (pagination) */
     function buildPagesFromItems(itemsArr, isSimple = false){
       const pages = [];
       let idx = 0;
       let pageNum = 1;
-      
       while (idx < itemsArr.length) {
         let take;
-        
         if (pageNum === 1) {
-          // Page 1 logic
-          const remainingItems = itemsArr.length - idx;
-          
-          if (remainingItems <= 13) {
-            // 13 or fewer items remain - totals stay on current page
-            take = remainingItems;
-          } else if (remainingItems <= 18) {
-            // 14-18 items remain - totals move to next page
-            take = 13;
-          } else {
-            // More than 18 items - take maximum 18
-            take = 18;
-          }
+          const remaining = itemsArr.length - idx;
+          take = remaining <= 13 ? remaining : remaining <= 18 ? 13 : 18;
         } else {
-          // Pages 2+ logic
-          const remainingItems = itemsArr.length - idx;
-          
-          if (remainingItems <= 16) {
-            // 16 or fewer items remain - totals stay on current page
-            take = remainingItems;
-          } else if (remainingItems <= 21) {
-            // 17-21 items remain - totals move to next page
-            take = 16;
-          } else {
-            // More than 21 items - take maximum 21
-            take = 21;
-          }
+          const remaining = itemsArr.length - idx;
+          take = remaining <= 16 ? remaining : remaining <= 21 ? 16 : 21;
         }
-        
         const subset = itemsArr.slice(idx, idx + take);
         const canvas = document.createElement('canvas');
         canvas.style.margin = '8px';
         const ctx = canvas.getContext('2d');
         setPixelRatio(ctx, canvas, PAGE_W, PAGE_H);
-        
-        // Determine if totals should be shown on this page
         const showTotalsOnThisPage = (idx + take) >= itemsArr.length;
-        
         if (activeDesign === 'standard') {
           renderPageStandard(ctx, subset, showTotalsOnThisPage, pageNum, isSimple);
         } else {
           renderPageModern(ctx, subset, showTotalsOnThisPage, pageNum, isSimple);
         }
-        
         pages.push({ canvas, itemsCount: subset.length, pageNum });
         idx += take;
         pageNum++;
       }
-
-      // If no items, create empty page
       if (pages.length === 0){
         const canvas = document.createElement('canvas');
         canvas.style.margin = '8px';
@@ -1393,11 +1260,9 @@
         else renderPageModern(ctx, [], true, 1, isSimple);
         pages.push({ canvas, itemsCount: 0, pageNum: 1 });
       }
-
       return pages.map(p=>p.canvas);
     }
 
-    /* Render preview canvases into DOM */
     function renderAndShowPages(){
       canvasWrap.querySelectorAll('.canvas-container').forEach(e=>e.remove());
       const pages = buildPagesFromItems(items);
@@ -1410,126 +1275,64 @@
       return pages;
     }
 
-    /* Optimized canvas to data URL with compression */
     function canvasToOptimizedDataURL(canvas, quality = 0.7) {
       return new Promise((resolve) => {
-        // Create a temporary canvas for optimization
         const tempCanvas = document.createElement('canvas');
         const tempCtx = tempCanvas.getContext('2d');
-        
-        // Set optimized dimensions (slightly reduced for file size)
-        const scale = 0.9; // Reduce size by 10% for optimization
+        const scale = 0.9;
         tempCanvas.width = canvas.width * scale;
         tempCanvas.height = canvas.height * scale;
-        
-        // Draw with smoothing for better quality at reduced size
         tempCtx.imageSmoothingEnabled = true;
         tempCtx.imageSmoothingQuality = 'high';
         tempCtx.drawImage(canvas, 0, 0, tempCanvas.width, tempCanvas.height);
-        
-        // Convert to JPEG with optimized quality
-        const dataUrl = tempCanvas.toDataURL('image/jpeg', quality);
-        resolve(dataUrl);
+        resolve(tempCanvas.toDataURL('image/jpeg', quality));
       });
     }
 
-    /* Download PDF build from canvases */
     async function downloadPDF(isSimple = false){
-      if (items.length === 0 && !confirm('No items added. Download empty estimate?')) {
-        return;
-      }
-      
-      // Show loading state
+      if (items.length === 0 && !confirm('No items added. Download empty estimate?')) return;
       const originalText = isSimple ? downloadSimpleBtn.textContent : downloadBtn.textContent;
       const button = isSimple ? downloadSimpleBtn : downloadBtn;
-      
       button.innerHTML = '<span class="loading"></span> Generating PDF...';
       button.disabled = true;
-      
       try {
         const pages = buildPagesFromItems(items, isSimple);
-        if (!pages || pages.length === 0) return;
         const { jsPDF } = window.jspdf;
-        const pdf = new jsPDF({ 
-          unit: 'px', 
-          format: [PAGE_W, PAGE_H], 
-          orientation: 'portrait',
-          compress: true // Enable PDF compression
-        });
-        
+        const pdf = new jsPDF({ unit: 'px', format: [PAGE_W, PAGE_H], orientation: 'portrait', compress: true });
         for (let i=0;i<pages.length;i++){
-          // Use optimized data URL with compression
           const dataUrl = await canvasToOptimizedDataURL(pages[i], 0.7);
-          
-          if (i===0) {
-            pdf.addImage(dataUrl, 'JPEG', 0, 0, PAGE_W, PAGE_H, undefined, 'FAST');
-          } else { 
-            pdf.addPage([PAGE_W, PAGE_H], 'portrait'); 
-            pdf.addImage(dataUrl, 'JPEG', 0, 0, PAGE_W, PAGE_H, undefined, 'FAST');
-          }
+          if (i===0) pdf.addImage(dataUrl, 'JPEG', 0, 0, PAGE_W, PAGE_H, undefined, 'FAST');
+          else { pdf.addPage([PAGE_W, PAGE_H], 'portrait'); pdf.addImage(dataUrl, 'JPEG', 0, 0, PAGE_W, PAGE_H, undefined, 'FAST'); }
         }
-        
         const filename = (msInput.value || 'Estimate').trim().replace(/\s+/g,'_') + '.pdf';
-        
-        // Force download instead of opening in viewer
         const pdfBlob = pdf.output('blob');
         const url = URL.createObjectURL(pdfBlob);
         const link = document.createElement('a');
-        link.href = url;
-        link.download = filename;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
-        
-        // Save to history (only for Customer PDF, not Employees PDF)
-        if (!isSimple) {
-          saveToHistory('full');
-        }
-        
-        showStatus(`PDF for ${typeLabel} downloaded successfully`, 'success');
+        link.href = url; link.download = filename; document.body.appendChild(link); link.click(); document.body.removeChild(link); URL.revokeObjectURL(url);
+        if (!isSimple) saveToHistory('full');
+        showStatus(`PDF for ${isSimple ? 'Employees' : 'Customer'} downloaded successfully`, 'success');
       } catch (error) {
         console.error('PDF generation error:', error);
         showStatus('Error generating PDF. Please try again.', 'error');
       } finally {
-        // Restore button state
         button.textContent = originalText;
         button.disabled = false;
       }
     }
 
-    /* Events */
-    renderBtn.addEventListener('click', () => { 
-      refreshPreview(); 
-      renderAndShowPages(); 
-      showStatus('Preview rendered successfully', 'success');
-    });
-    
-    downloadBtn.addEventListener('click', () => { 
-      refreshPreview(); 
-      renderAndShowPages(); 
-      downloadPDF(false); 
-    });
-
-    downloadSimpleBtn.addEventListener('click', () => { 
-      refreshPreview(); 
-      renderAndShowPages(); 
-      downloadPDF(true); 
-    });
-
-    modalClose.addEventListener('click', () => {
-      historyModal.style.display = 'none';
-    });
-
-    window.addEventListener('click', (e) => {
-      if (e.target === historyModal) {
-        historyModal.style.display = 'none';
-      }
-    });
-
+    renderBtn.addEventListener('click', () => { refreshPreview(); renderAndShowPages(); showStatus('Preview rendered successfully', 'success'); });
+    downloadBtn.addEventListener('click', () => { refreshPreview(); renderAndShowPages(); downloadPDF(false); });
+    downloadSimpleBtn.addEventListener('click', () => { refreshPreview(); renderAndShowPages(); downloadPDF(true); });
+    modalClose.addEventListener('click', () => { historyModal.style.display = 'none'; });
+    window.addEventListener('click', (e) => { if (e.target === historyModal) historyModal.style.display = 'none'; });
     clearAllHistoryBtn.addEventListener('click', clearAllHistory);
 
-    // Auto-set today's date if date field is empty
+    // View History Button
+    viewHistoryBtn.addEventListener('click', () => {
+      populateModalHistory();
+      historyModal.style.display = 'flex';
+    });
+
     dateInput.addEventListener('focus', () => {
       if (!dateInput.value) {
         const today = new Date();
@@ -1540,17 +1343,26 @@
       }
     });
 
-    // Allow Enter key to add rows
     [qtyInput, unitInput, descInput, rateInput].forEach(input => {
       input.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') {
-          e.preventDefault();
-          addRowBtn.click();
-        }
+        if (e.key === 'Enter') { e.preventDefault(); addRowBtn.click(); }
       });
     });
 
-    /* initial preview */
+    document.addEventListener('keydown', e => {
+      if (e.ctrlKey && e.key.toLowerCase() === 'l') {
+        e.preventDefault();
+        if (items.length > 0) {
+          const last = items[items.length - 1];
+          items.push({ ...last });
+          refreshPreview(); renderAndShowPages();
+          showStatus('Last row repeated (Ctrl+L)', 'success');
+        } else {
+          showStatus('No row to repeat', 'error');
+        }
+      }
+    });
+
     refreshPreview();
     renderAndShowPages();
     cleanupExpiredHistory();
@@ -1559,4 +1371,3 @@
   </script>
 </body>
 </html>
-
